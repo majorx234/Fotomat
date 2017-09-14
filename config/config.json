@@ -1,0 +1,21 @@
+{
+  "paths" : {
+    "base" : "/media/odroid/1D97-C9C65/20170807_Sommerkurs",
+    "single_pictures" : "Einzelbilder",
+    "grouped_pictures" : "Viererbilder"
+  },
+
+  "duration" : 20000,
+
+  "number_of_images" : 4,
+
+  "number_of_extra_images": 0,	
+  "extra_images" : "/home/odroid/fotomat/Auerworld2017_5184.jpg",
+
+  "monitor_aspect_ratio" : "4:3",
+
+  "INFOTEXT": "The Fotomat will take 4 pictures.\nPlease wait at least 30 sec for printed pictures.\nYou will find the Fotos online tomorrow! Happy Sommerkurs 2017!!! \n  \n",
+
+  "PRINT-ERROR":["The paper tray is empty.",
+  		"Please inform the staff, he will figure it out"]
+}
