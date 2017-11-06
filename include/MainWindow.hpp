@@ -47,6 +47,7 @@ signals:
     void printingFinished();
     void enableVideoUpdate();
     void disableVideoUpdate();
+    void startCaptureProcess();
 //void setOverlayText(QString s);
 
 

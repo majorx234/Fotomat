@@ -23,6 +23,7 @@ class WorkerThread : public QThread {
     void stopLoop();
 
 signals:
+    void startWork();
     void liveImageCaptured(std::shared_ptr<QImage> image);
     void singleCaptureDone(std::shared_ptr<QImage> image);
     void extraImageDone(std::shared_ptr<QImage> image);

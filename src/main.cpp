@@ -3,6 +3,7 @@
 #include "VideoWidget.hpp"
 #include "WorkerThread.hpp"
 #include "QRCodeGenerator.hpp"
+#include "GpioThread.hpp"
 
 #include <QCommandLineParser>
 #include <QFile>
@@ -146,13 +147,17 @@ int main(int argc, char** argv) {
     std::shared_ptr<ImageSaver> imageSaver = createImageSaver(*jsonConfig);
 
     int number_of_images        =  (*jsonConfig)["number_of_images"].toInt();
-    double duration_1er                =  (*jsonConfig)["duration_1er"].toDouble();
-    double duration_4er                =  (*jsonConfig)["duration_4er"].toDouble();
+    double duration_1er         =  2000.0; // default value
+    duration_1er                =        (*jsonConfig)["duration_1er"].toDouble();
+    double duration_4er         =  8000.0; // default value
+    duration_4er                =  (*jsonConfig)["duration_4er"].toDouble();
     int number_of_extra_images   =  (*jsonConfig)["number_of_extra_images"].toInt();
     QString path_to_extra_images             =  (*jsonConfig)["extra_images"].toString();
-    std::shared_ptr<WorkerThread> workerThread{new WorkerThread(picturePrinter, duration_1er, duration_4er, number_of_images,number_of_extra_images, path_to_extra_images)};
-    workerThread->start();
+    std::shared_ptr<WorkerThread> workerThread{new WorkerThread(picturePrinter, duration_1er, duration_4er, number_of_images, number_of_extra_images, path_to_extra_images)};
+    std::shared_ptr<GpioThread>   gpioThread(new GpioThread(204, 199));
 
+    workerThread->start();
+    gpioThread->start();
     std::shared_ptr<MainWindow> mainWindow(new MainWindow(fotomat, jsonConfig, imageSaver, number_of_extra_images));
 
     qRegisterMetaType<std::shared_ptr<QImage>>("std::shared_ptr<QImage>");
@@ -166,10 +171,18 @@ int main(int argc, char** argv) {
     // image capture
     QObject::connect(mainWindow.get(), SIGNAL(startCapture()), workerThread.get(), SLOT(startCapture()),
                      Qt::QueuedConnection);
+    /* button is pressed so startCapture */
+    QObject::connect(gpioThread.get(), SIGNAL(buttonPressed()), mainWindow.get(), SLOT(startCaptureProcess()),
+                     Qt::QueuedConnection);
+
+    /* capture started so unset LED lock button*/
+    QObject::connect(mainWindow.get(), SIGNAL(startCapture()), gpioThread.get(), SLOT(lockButton()),
+                     Qt::QueuedConnection);
     QObject::connect(workerThread.get(), SIGNAL(singleCaptureDone(std::shared_ptr<QImage>)), mainWindow.get(),
                      SLOT(singleCaptureDone(std::shared_ptr<QImage>)), Qt::QueuedConnection);
-QObject::connect(workerThread.get(), SIGNAL(extraImageDone(std::shared_ptr<QImage>)), mainWindow.get(),
+    QObject::connect(workerThread.get(), SIGNAL(extraImageDone(std::shared_ptr<QImage>)), mainWindow.get(),
                      SLOT(extraImageDone(std::shared_ptr<QImage>)), Qt::QueuedConnection);
+
     QObject::connect(workerThread.get(), SIGNAL(capturingFinished()), mainWindow.get(), SLOT(capturingFinished()),
                      Qt::QueuedConnection);
 
@@ -178,7 +191,9 @@ QObject::connect(workerThread.get(), SIGNAL(extraImageDone(std::shared_ptr<QImag
                      SLOT(printImage(std::shared_ptr<QImage>)), Qt::QueuedConnection);
     QObject::connect(workerThread.get(), SIGNAL(printingFinished()), mainWindow.get(), SLOT(printingFinished()),
                      Qt::QueuedConnection);
-    
+    /* pinting finished so set LED gice button free */
+    QObject::connect(workerThread.get(), SIGNAL(printingFinished()), gpioThread.get(), SLOT(releaseButton()),
+                     Qt::QueuedConnection);    
     // countdown
     QObject::connect(workerThread.get(), SIGNAL(startCountdown(int)), mainWindow.get(), SIGNAL(startCountdown(int)),
                      Qt::QueuedConnection);
@@ -193,6 +208,9 @@ QObject::connect(workerThread.get(), SIGNAL(extraImageDone(std::shared_ptr<QImag
     QObject::connect(workerThread.get(), SIGNAL(workerErrorOccured()), mainWindow.get(), SLOT(workerErrorOccured()),
                      Qt::QueuedConnection);
 
+    QObject::connect(workerThread.get(), SIGNAL(startWork()), gpioThread.get(), SLOT(resetButton()),
+                     Qt::QueuedConnection);    
+
     mainWindow->setWindowTitle("Fotomat");
     if (commandLineParser->isSet(fullscreenOption)) {
         mainWindow->showFullScreen();
@@ -206,7 +224,9 @@ QObject::connect(workerThread.get(), SIGNAL(extraImageDone(std::shared_ptr<QImag
     int fotomatRet = fotomat->exec();
 
     workerThread->stopLoop();
+    gpioThread->stopLoop();
     workerThread->wait(20 * 1000);
+    gpioThread->wait(1000 * 1000);
 
     return fotomatRet;
 }

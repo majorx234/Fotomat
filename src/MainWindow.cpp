@@ -150,6 +150,17 @@ void MainWindow::capturingFinished() {
     emit printImage(merged);
 }
 
+void MainWindow::startCaptureProcess()
+{
+    auto startPrinting = [&]() {
+        _captureInProgress = true;
+        _paperTrayEmpty = false;
+        _overlayWidget.enable();
+        emit startCapture();
+    };
+    startPrinting();
+}
+
 void MainWindow::keyPressEvent(QKeyEvent* event) {
 
     // check the papertray of the printer
@@ -160,19 +171,14 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
     }*/
 
 //    else{
-        auto startPrinting = [&]() {
-            _captureInProgress = true;
-            _paperTrayEmpty = false;
-            _overlayWidget.enable();
-            emit startCapture();
-        };
+
 //    }
 
     if (!_captureInProgress) {
         switch (event->key()) {
             case Qt::Key_C:
             case Qt::Key_1:
-                startPrinting();
+                startCaptureProcess();
                 break;
 
             case Qt::Key_Escape:

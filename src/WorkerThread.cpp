@@ -68,7 +68,7 @@ void WorkerThread::run() {
         emit workerErrorOccured();
         return;
     }
-
+    emit startWork();
     while (true) {
         _workerQueueMutex.lock();
 
@@ -148,12 +148,12 @@ void WorkerThread::run() {
                        emit extraImageDone(new_img);
                        printf("extra image is emited\n");
                     }
-	             //this->msleep(1000);
+	                 //this->msleep(1000);
                     _captureInProgress = false;
                     //emit disableVideoUpdate();
                     emit capturingFinished();
                     this->msleep(_duration_4er);
-
+                    //this->msleep(4000);
                     
                     //
                     

@@ -11,8 +11,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 #file(GLOB_RECURSE sourceFiles src/*.cpp)
 
-add_definitions("-std=c++11 -g -O3 -march=native -Wall -Wextra -Werror")
-
+#add_definitions("-std=c++11 -g -O3 -march=native -Wall -Wextra -Werror")
+add_definitions("-std=c++11 -g -O3 -march=native -Wall -Wextra -DDEBUG")
 if(APPLE)
 	set(QT5_PATH "/usr/local/opt/qt5" CACHE PATH "Path to Qt5")
 	set(QT5_MODULE_PATH ${QT5_PATH}/lib/cmake)
@@ -27,6 +27,14 @@ endif(APPLE)
 set(PROJECT_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include )
 include_directories(${PROJECT_INCLUDE_DIR})
 
+set(GPIO_HEADERS
+  ${PROJECT_INCLUDE_DIR}/gpio.h
+  )
+
+set(GPIO_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/gpio.c
+  )
+
 set(${CMAKE_PROJECT_NAME}_HEADERS
       ${PROJECT_INCLUDE_DIR}/CameraInterface.hpp  
       ${PROJECT_INCLUDE_DIR}/MainWindow.hpp     
@@ -35,6 +43,7 @@ set(${CMAKE_PROJECT_NAME}_HEADERS
       ${PROJECT_INCLUDE_DIR}/ImageSaver.hpp       
       ${PROJECT_INCLUDE_DIR}/OverlayWidget.hpp  
       ${PROJECT_INCLUDE_DIR}/VideoWidget.hpp
+      ${PROJECT_INCLUDE_DIR}/GpioThread.hpp
       )
 set(${CMAKE_PROJECT_NAME}_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -44,15 +53,23 @@ set(${CMAKE_PROJECT_NAME}_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WorkerThread.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ImageSaver.cpp       
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OverlayWidget.cpp  
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/VideoWidget.cpp      
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/VideoWidget.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GpioThread.cpp      
 )
 set(sourceFiles 
       ${${CMAKE_PROJECT_NAME}_SOURCES}
       ${${CMAKE_PROJECT_NAME}_HEADERS}
       )
 
-add_executable(${CMAKE_PROJECT_NAME} ${sourceFiles})
+set(gpio_sourceFiles
+  ${GPIO_HEADERS}
+  ${GPIO_SOURCES}
+  )
 
+add_library(gpio ${gpio_sourceFiles})
+
+add_executable(${CMAKE_PROJECT_NAME} ${sourceFiles})
+target_link_libraries(${CMAKE_PROJECT_NAME} gpio)
 #Find the QRencode library
 find_library(QRENCODE_LIBRARY
              NAMES qrencode
@@ -107,3 +124,4 @@ include_directories(${Qt5Concurrent_INCLUDE_DIRS})
 find_package(Cups REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} ${CUPS_LIBRARIES})
 include_directories(${CUPS_INCLUDE_DIRS})
+
